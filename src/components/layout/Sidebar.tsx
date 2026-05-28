@@ -128,7 +128,7 @@ export function Sidebar() {
       )}>
         <div className="flex-shrink-0">
           <img
-            src="/ic-logo.svg"
+            src="/ic-logo.png"
             alt="IC"
             className={cn("rounded-full transition-all", collapsed ? "w-9 h-9" : "w-9 h-9")}
           />

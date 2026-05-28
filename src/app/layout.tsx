@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   title: "ICL CRM | Integrated Communication Limited",
   description: "All-in-one agency operations platform for Integrated Communication Limited — Tanzania",
   icons: {
-    icon: "/ic-logo.svg",
-    apple: "/ic-logo.svg",
+    icon: "/ic-logo.png",
+    apple: "/ic-logo.png",
   },
 };
 

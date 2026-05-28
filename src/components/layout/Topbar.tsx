@@ -12,14 +12,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn, getInitials, formatRelativeTime } from "@/lib/utils";
-import { currentUser, notifications } from "@/lib/mock-data";
+import { notifications as mockNotifications } from "@/lib/mock-data";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export function Topbar() {
+  const { user, logout } = useAuth();
   const [dark, setDark] = useState(false);
   const router = useRouter();
-  const unread = notifications.filter((n) => !n.read);
+  const unread = mockNotifications.filter((n) => !n.read);
 
   const toggleDark = () => {
     setDark(!dark);
@@ -87,7 +89,7 @@ export function Topbar() {
               )}
             </div>
             <div className="max-h-80 overflow-y-auto divide-y divide-border">
-              {notifications.slice(0, 6).map((notif) => (
+              {mockNotifications.slice(0, 6).map((notif) => (
                 <div
                   key={notif.id}
                   className={cn(
@@ -123,21 +125,21 @@ export function Topbar() {
           >
             <Avatar className="w-6 h-6">
               <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">
-                {getInitials(currentUser.name)}
+                {getInitials(user?.name ?? "?")}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden sm:inline">{currentUser.name.split(" ")[0]}</span>
+            <span className="hidden sm:inline">{user?.name?.split(" ")[0] ?? "..."}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <div className="px-3 py-2">
-              <p className="text-sm font-medium">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+              <p className="text-sm font-medium">{user?.name}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push("/settings")}>My Profile</DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push("/settings")}>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">Sign Out</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" onClick={logout}>Sign Out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

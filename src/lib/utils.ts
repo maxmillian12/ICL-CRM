@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** Format a number as Tanzania Shillings (TZS). */
-export function formatCurrency(amount: number, currency = "TZS"): string {
+export function formatCurrency(amount: number): string {
   const formatted = new Intl.NumberFormat("en-TZ", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,

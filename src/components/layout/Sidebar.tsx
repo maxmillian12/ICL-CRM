@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
@@ -54,7 +55,7 @@ const navGroups: NavGroup[] = [
       { href: "/campaigns", icon: Megaphone, label: "Campaigns", permission: "campaigns:view" },
       { href: "/tasks", icon: CheckSquare, label: "My Tasks", permission: "tasks:view" },
       { href: "/calendar", icon: Calendar, label: "Calendar", permission: "dashboard:view" },
-      { href: "/approvals", icon: FileCheck, label: "Approvals", permission: "approvals:view", badge: 2 },
+      { href: "/approvals", icon: FileCheck, label: "Approvals", permission: "approvals:view" },
     ],
   },
   {
@@ -93,33 +94,24 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-export function Sidebar() {
-  const pathname = usePathname();
-  const { user, can, logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+// ── Extracted inner component to avoid "component created during render" error ─
+interface SidebarInnerProps {
+  collapsed: boolean;
+  mobileOpen: boolean;
+  setCollapsed: (v: boolean) => void;
+  setMobileOpen: (v: boolean) => void;
+  pathname: string;
+  visibleGroups: NavGroup[];
+  user: { name: string; role: string };
+  unreadCount: number;
+  logout: () => void;
+}
 
-  // Fetch real notification count
-  const { data: notifData } = useApi(
-    () => notificationsApi.list().then(r => r.data),
-    []
-  );
-  const unreadCount = (notifData as { unread?: number })?.unread ?? 0;
-
-  // Don't render sidebar content until user is loaded
-  if (!user) return null;
-
-  const visibleGroups = navGroups.map(group => ({
-    ...group,
-    items: group.items
-      .filter(item => !item.permission || can(item.permission))
-      .map(item => item.href === "/notifications"
-        ? { ...item, badge: unreadCount > 0 ? unreadCount : undefined }
-        : item
-      ),
-  })).filter(group => group.items.length > 0);
-
-  const SidebarContent = () => (
+function SidebarContent({
+  collapsed, mobileOpen, setCollapsed, setMobileOpen,
+  pathname, visibleGroups, user, unreadCount, logout,
+}: SidebarInnerProps) {
+  return (
     <div className="flex flex-col h-full">
       {/* IC Logo */}
       <div className={cn(
@@ -127,10 +119,12 @@ export function Sidebar() {
         collapsed && "justify-center px-2"
       )}>
         <div className="flex-shrink-0">
-          <img
+          <Image
             src="/ic-logo.png"
-            alt="IC"
-            className={cn("rounded-full transition-all", collapsed ? "w-9 h-9" : "w-9 h-9")}
+            alt="IC Logo"
+            width={36}
+            height={36}
+            className="rounded-full"
           />
         </div>
         {!collapsed && (
@@ -153,6 +147,7 @@ export function Sidebar() {
               </p>
             )}
             {group.items.map((item) => {
+              const badge = item.href === "/notifications" ? unreadCount : (item.badge ?? 0);
               const active = pathname === item.href ||
                 (item.href !== "/dashboard" && pathname.startsWith(item.href));
               return (
@@ -176,12 +171,12 @@ export function Sidebar() {
                       : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"
                   )} />
                   {!collapsed && <span className="truncate">{item.label}</span>}
-                  {!collapsed && item.badge && item.badge > 0 && (
+                  {!collapsed && badge > 0 && (
                     <Badge className="ml-auto bg-red-500 text-white text-[10px] px-1.5 min-w-5 h-4 flex items-center justify-center">
-                      {item.badge}
+                      {badge}
                     </Badge>
                   )}
-                  {collapsed && item.badge && item.badge > 0 && (
+                  {collapsed && badge > 0 && (
                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                   )}
                 </Link>
@@ -212,7 +207,7 @@ export function Sidebar() {
               <p className="text-sidebar-foreground text-sm font-medium truncate">{user.name}</p>
               <p className="text-sidebar-foreground/50 text-xs truncate">{getRoleLabel(user.role)}</p>
             </div>
-            <button type="button" onClick={logout} title="Sign out">
+            <button type="button" onClick={logout} title="Sign out" aria-label="Sign out">
               <LogOut className="w-4 h-4 text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors" />
             </button>
           </div>
@@ -223,6 +218,7 @@ export function Sidebar() {
       <button
         type="button"
         onClick={() => setCollapsed(!collapsed)}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-sidebar-border rounded-full items-center justify-center hover:bg-sidebar-accent transition-colors z-10"
       >
         {collapsed
@@ -231,6 +227,32 @@ export function Sidebar() {
       </button>
     </div>
   );
+}
+
+// ── Main Sidebar export ───────────────────────────────────────────────────────
+export function Sidebar() {
+  const pathname = usePathname();
+  const { user, can, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const { data: notifData } = useApi(
+    () => notificationsApi.list().then(r => r.data),
+    []
+  );
+  const unreadCount = (notifData as { unread?: number })?.unread ?? 0;
+
+  if (!user) return null;
+
+  const visibleGroups = navGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => !item.permission || can(item.permission)),
+  })).filter(group => group.items.length > 0);
+
+  const innerProps: SidebarInnerProps = {
+    collapsed, mobileOpen, setCollapsed, setMobileOpen,
+    pathname, visibleGroups, user, unreadCount, logout,
+  };
 
   return (
     <>
@@ -238,6 +260,7 @@ export function Sidebar() {
       <button
         type="button"
         onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label="Toggle mobile menu"
         className="lg:hidden fixed top-4 left-4 z-50 w-9 h-9 bg-sidebar rounded-lg flex items-center justify-center shadow-lg"
       >
         {mobileOpen
@@ -258,7 +281,7 @@ export function Sidebar() {
         "lg:hidden fixed left-0 top-0 h-full z-40 transition-transform duration-300 bg-sidebar w-64",
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <SidebarContent />
+        <SidebarContent {...innerProps} />
       </aside>
 
       {/* Desktop sidebar */}
@@ -266,7 +289,7 @@ export function Sidebar() {
         "hidden lg:flex flex-col fixed left-0 top-0 h-full bg-sidebar transition-all duration-300 relative z-20",
         collapsed ? "w-16" : "w-60"
       )}>
-        <SidebarContent />
+        <SidebarContent {...innerProps} />
       </aside>
     </>
   );

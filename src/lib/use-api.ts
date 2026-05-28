@@ -12,7 +12,8 @@ export interface UseApiResult<T> {
 
 export function useApi<T>(
   fetchFn: () => Promise<{ data: T }>,
-  deps: unknown[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  deps: any[] = []
 ): UseApiResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,13 +24,23 @@ export function useApi<T>(
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetchFn()
-      .then(res => { if (!cancelled) setData(res.data); })
-      .catch(err => { if (!cancelled) setError(getApiError(err)); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+
+    async function run() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchFn();
+        if (!cancelled) setData(res.data);
+      } catch (err) {
+        if (!cancelled) setError(getApiError(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    run();
     return () => { cancelled = true; };
+    // deps are intentionally dynamic
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, ...deps]);
 

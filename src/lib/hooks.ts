@@ -31,6 +31,7 @@ export const revalidate = {
   users: () => mutate((key: string) => typeof key === "string" && key.includes("/api/users")),
   departments: () => mutate((key: string) => typeof key === "string" && key.includes("/api/departments")),
   notifications: () => mutate((key: string) => typeof key === "string" && key.includes("/api/notifications")),
+  approvals: () => mutate((key: string) => typeof key === "string" && key.includes("/api/approvals")),
   dashboard: () => mutate((key: string) => typeof key === "string" && key.includes("/api/reports")),
   settings: () => mutate("/api/settings"),
   all: () => mutate(() => true),
@@ -112,6 +113,11 @@ export function useRevenue() {
 
 export function useEmployees() {
   return useData<ListResponse<Record<string, unknown>>>("/api/hr/employees");
+}
+
+export function useApprovals(params?: Record<string, string>) {
+  const search = params ? "?" + new URLSearchParams(params).toString() : "";
+  return useData<ListResponse<Record<string, unknown>>>(`/api/approvals${search}`, { refreshInterval: 6000 });
 }
 
 // ── Mutation helpers (optimistic UI + cache invalidation) ────────────────────
@@ -302,6 +308,36 @@ export const mutations = {
   markAllRead: async () => {
     const result = await apiFetch("POST", "/api/notifications/mark-all-read");
     await revalidate.notifications();
+    return result;
+  },
+
+  // Approvals
+  createApproval: async (data: Record<string, unknown>) => {
+    const result = await apiFetch("POST", "/api/approvals", data);
+    await revalidate.approvals();
+    await revalidate.dashboard();
+    return result;
+  },
+  approveApproval: async (id: string, notes?: string) => {
+    const result = await apiFetch("PATCH", `/api/approvals/${id}`, { status: "approved", reviewer_notes: notes ?? "" });
+    await revalidate.approvals();
+    await revalidate.dashboard();
+    return result;
+  },
+  rejectApproval: async (id: string, notes?: string) => {
+    const result = await apiFetch("PATCH", `/api/approvals/${id}`, { status: "rejected", reviewer_notes: notes ?? "" });
+    await revalidate.approvals();
+    await revalidate.dashboard();
+    return result;
+  },
+  requestRevision: async (id: string, notes?: string) => {
+    const result = await apiFetch("PATCH", `/api/approvals/${id}`, { status: "revision", reviewer_notes: notes ?? "" });
+    await revalidate.approvals();
+    return result;
+  },
+  deleteApproval: async (id: string) => {
+    const result = await apiFetch("DELETE", `/api/approvals/${id}`);
+    await revalidate.approvals();
     return result;
   },
 };

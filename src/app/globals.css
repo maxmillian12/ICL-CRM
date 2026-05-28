@@ -152,6 +152,34 @@
 .dragging { opacity: 0.5; }
 .drag-over { background: oklch(0.55 0.22 264 / 0.08); border: 2px dashed oklch(0.55 0.22 264); }
 
+/* ── Print / PDF styles ── */
+@media print {
+  /* Hide everything except the invoice */
+  body > *:not(#invoice-print-root) { display: none !important; }
+  #invoice-print-root { display: block !important; position: fixed; inset: 0; z-index: 9999; background: white; overflow: auto; }
+
+  /* Invoice specific */
+  .invoice-print {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px;
+    color: #1a1a1a;
+    background: white;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px;
+  }
+  .invoice-print * { box-sizing: border-box; }
+  .invoice-print table { width: 100%; border-collapse: collapse; }
+  .invoice-print th, .invoice-print td { padding: 8px 12px; text-align: left; }
+  .invoice-print thead th { background: #f3f4f6; font-weight: 600; }
+  .invoice-print tbody tr:nth-child(even) { background: #f9fafb; }
+  .no-print { display: none !important; }
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+}
+
 /* Animated gradient for hero elements */
 @keyframes gradient-shift {
   0% { background-position: 0% 50%; }

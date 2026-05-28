@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TableLoader, ApiError } from "@/components/ui/loading";
 import { useInvoices, useClients, useFinanceSummary, mutations } from "@/lib/hooks";
+import { printInvoice } from "@/lib/pdf-utils";
 import { useSettings } from "@/lib/hooks";
 import { formatCurrency, formatDate, getStatusColor, getInitials, cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -184,6 +185,9 @@ export default function InvoicesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setSelected(inv)}><FileText className="w-3.5 h-3.5 mr-2"/>View</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => printInvoice(inv, settings ?? {})}>
+                            <Printer className="w-3.5 h-3.5 mr-2"/>Print / Export PDF
+                          </DropdownMenuItem>
                           {inv.status === "draft" && <DropdownMenuItem onClick={() => handleMarkSent(inv.id as string)}><Send className="w-3.5 h-3.5 mr-2"/>Send</DropdownMenuItem>}
                           {(inv.status === "sent" || inv.status === "overdue") && (
                             <DropdownMenuItem onClick={() => handleMarkPaid(inv.id as string)} className="text-green-600"><CheckCircle className="w-3.5 h-3.5 mr-2"/>Mark Paid</DropdownMenuItem>
@@ -282,6 +286,15 @@ export default function InvoicesPage() {
               <div className="flex items-center justify-between">
                 <DialogTitle>{TYPE_LABELS[(selected.type as InvoiceType)||"invoice"]} — {selected.number as string}</DialogTitle>
                 <div className="flex gap-2">
+                  {/* Print / PDF export */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => printInvoice(selected, settings ?? {})}
+                    title="Print or Save as PDF"
+                  >
+                    <Printer className="w-4 h-4 mr-1.5" />Print / PDF
+                  </Button>
                   {selected.status==="draft" && <Button size="sm" onClick={()=>handleMarkSent(selected.id as string)}><Send className="w-4 h-4 mr-1.5"/>Send</Button>}
                   {(selected.status==="sent"||selected.status==="overdue") && (
                     <Button size="sm" className="bg-green-500 hover:bg-green-600" onClick={()=>handleMarkPaid(selected.id as string)}><CheckCircle className="w-4 h-4 mr-1.5"/>Mark Paid</Button>

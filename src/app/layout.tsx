@@ -7,7 +7,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "ICL CRM | Integrated Communication Limited",
-  description: "All-in-one agency operations platform for Integrated Communication Limited",
+  description: "All-in-one agency operations platform for Integrated Communication Limited — Tanzania",
+  icons: {
+    icon: "/ic-logo.svg",
+    apple: "/ic-logo.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

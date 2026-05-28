@@ -4,17 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  LayoutDashboard, Users, FolderKanban, MessageSquare, DollarSign,
+  LayoutDashboard, Users, FolderKanban, MessageSquare,
   BarChart3, Settings, ChevronLeft, ChevronRight, Megaphone,
-  UserCheck, FileCheck, Bot, Bell, Building2, Menu, X, LogOut,
+  FileCheck, Bot, Bell, Building2, Menu, X, LogOut,
   Briefcase, Calendar, CheckSquare, Target, TrendingUp, Shield,
-  Receipt, FileText
+  Receipt,
 } from "lucide-react";
 import { cn, getInitials, getRoleLabel } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { useApi } from "@/lib/use-api";
+import { notificationsApi } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { notifications } from "@/lib/mock-data";
 import type { Permission } from "@/lib/types";
 
 interface NavItem {
@@ -35,7 +36,7 @@ const navGroups: NavGroup[] = [
     label: "Overview",
     items: [
       { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", permission: "dashboard:view" },
-      { href: "/notifications", icon: Bell, label: "Notifications", badge: notifications.filter(n => !n.read).length },
+      { href: "/notifications", icon: Bell, label: "Notifications" },
     ],
   },
   {
@@ -94,34 +95,50 @@ const navGroups: NavGroup[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, can } = useAuth();
+  const { user, can, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Fetch real notification count
+  const { data: notifData } = useApi(
+    () => notificationsApi.list().then(r => r.data),
+    []
+  );
+  const unreadCount = (notifData as { unread?: number })?.unread ?? 0;
 
   // Don't render sidebar content until user is loaded
   if (!user) return null;
 
   const visibleGroups = navGroups.map(group => ({
     ...group,
-    items: group.items.filter(item =>
-      !item.permission || can(item.permission)
-    ),
+    items: group.items
+      .filter(item => !item.permission || can(item.permission))
+      .map(item => item.href === "/notifications"
+        ? { ...item, badge: unreadCount > 0 ? unreadCount : undefined }
+        : item
+      ),
   })).filter(group => group.items.length > 0);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Logo */}
+      {/* IC Logo */}
       <div className={cn(
-        "flex items-center gap-3 px-4 py-5 border-b border-sidebar-border",
+        "flex items-center gap-3 px-4 py-4 border-b border-sidebar-border",
         collapsed && "justify-center px-2"
       )}>
-        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-          <UserCheck className="w-5 h-5 text-primary-foreground" />
+        <div className="flex-shrink-0">
+          <img
+            src="/ic-logo.svg"
+            alt="IC"
+            className={cn("rounded-full transition-all", collapsed ? "w-9 h-9" : "w-9 h-9")}
+          />
         </div>
         {!collapsed && (
           <div>
-            <p className="text-sidebar-foreground font-bold text-sm leading-tight">ICL CRM</p>
-            <p className="text-sidebar-foreground/50 text-xs">Tanzania</p>
+            <p className="text-sidebar-foreground font-bold text-sm leading-tight tracking-wide">
+              IC<span className="text-[#00AAEE]">L</span> CRM
+            </p>
+            <p className="text-sidebar-foreground/45 text-[10px]">Integrated Communication Ltd</p>
           </div>
         )}
       </div>
@@ -195,7 +212,9 @@ export function Sidebar() {
               <p className="text-sidebar-foreground text-sm font-medium truncate">{user.name}</p>
               <p className="text-sidebar-foreground/50 text-xs truncate">{getRoleLabel(user.role)}</p>
             </div>
-            <LogOut className="w-4 h-4 text-sidebar-foreground/40 hover:text-sidebar-foreground cursor-pointer flex-shrink-0" />
+            <button type="button" onClick={logout} title="Sign out">
+              <LogOut className="w-4 h-4 text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors" />
+            </button>
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import { Eye, EyeOff, UserCheck, Loader2, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,9 +62,7 @@ function LoginForm() {
     <div className="flex-1 flex items-center justify-center p-8 bg-background">
       <div className="w-full max-w-md">
         <div className="lg:hidden flex items-center gap-3 mb-8">
-          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-            <UserCheck className="w-5 h-5 text-white" />
-          </div>
+          <img src="/ic-logo.svg" alt="IC" className="w-10 h-10 rounded-full" />
           <div>
             <p className="font-bold">ICL CRM</p>
             <p className="text-muted-foreground text-xs">🇹🇿 Tanzania</p>
@@ -133,9 +131,7 @@ export default function LoginPage() {
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <UserCheck className="w-6 h-6 text-white" />
-            </div>
+            <img src="/ic-logo.svg" alt="IC" className="w-12 h-12 rounded-full" />
             <div>
               <p className="text-sidebar-foreground font-bold text-lg">ICL CRM</p>
               <p className="text-sidebar-foreground/50 text-xs">🇹🇿 Tanzania — Agency OS</p>

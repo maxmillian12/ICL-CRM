@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Outer dark arc (bottom-right) -->
+  <path d="M 160 185 A 95 95 0 0 0 185 160" fill="none" stroke="#1a2035" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Blue ring -->
+  <circle cx="95" cy="95" r="88" fill="none" stroke="#00AAEE" stroke-width="7"/>
+
+  <!-- Dark circle background -->
+  <circle cx="95" cy="95" r="82" fill="#0D1117"/>
+
+  <!-- White "i" stem -->
+  <rect x="58" y="78" width="14" height="52" rx="2" fill="white"/>
+
+  <!-- Colorful quadrant dot on "i" (the IC brand element) -->
+  <clipPath id="dot-clip">
+    <rect x="55" y="55" width="20" height="20" rx="3"/>
+  </clipPath>
+  <g clip-path="url(#dot-clip)">
+    <rect x="55" y="55" width="10" height="10" fill="#FFD600"/>
+    <rect x="65" y="55" width="10" height="10" fill="#4CAF50"/>
+    <rect x="55" y="65" width="10" height="10" fill="#9C1B6C"/>
+    <rect x="65" y="65" width="10" height="10" fill="#E91E63"/>
+  </g>
+
+  <!-- White "C" -->
+  <path d="M 90 78 C 90 78 115 78 128 90 C 137 99 137 111 128 120 C 115 132 90 132 90 132
+           L 90 118 C 90 118 108 118 116 110 C 122 104 122 96 116 90 C 108 82 90 82 90 82 Z"
+        fill="white"/>
+</svg>

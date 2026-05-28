@@ -1,25 +1,27 @@
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 
-let _sql: NeonQueryFunction<false, false> | null = null;
-
-function getDb(): NeonQueryFunction<false, false> {
-  if (!_sql) {
-    const url = process.env.DATABASE_URL;
-    if (!url) throw new Error("DATABASE_URL is not configured. Set it in Vercel environment variables.");
-    _sql = neon(url);
+// Create a factory that initializes on demand (safe for serverless build-time)
+function createSql(): NeonQueryFunction<false, false> {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      "DATABASE_URL is not set. Add it to your Vercel environment variables."
+    );
   }
-  return _sql;
+  return neon(url);
 }
 
-// Tagged template proxy — lazy-initializes the connection on first use
-export const sql = new Proxy({} as NeonQueryFunction<false, false>, {
-  apply(_target, _thisArg, args: [TemplateStringsArray, ...unknown[]]) {
-    const db = getDb();
-    return (db as unknown as (...a: unknown[]) => unknown)(...args);
-  },
-  get(_target, prop) {
-    const db = getDb();
-    return (db as unknown as Record<string, unknown>)[prop as string];
-  },
-}) as NeonQueryFunction<false, false>;
+// Export a function so each API route gets a fresh connection per request
+export function getDb(): NeonQueryFunction<false, false> {
+  return createSql();
+}
+
+// Convenience shorthand for tagged template queries
+export async function sql<T = Record<string, unknown>>(
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+): Promise<T[]> {
+  const db = createSql();
+  return db(strings, ...values) as Promise<T[]>;
+}
 

@@ -140,22 +140,9 @@ export default function LoginPage() {
           <h1 className="text-sidebar-foreground text-4xl font-bold leading-tight mb-6">
             Run your agency<br />smarter, not harder.
           </h1>
-          <p className="text-sidebar-foreground/60 text-lg mb-10">
+          <p className="text-sidebar-foreground/60 text-lg">
             The all-in-one platform for managing clients, campaigns, teams, and revenue — built for Integrated Communication Limited.
           </p>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "Currency", value: "TZS" },
-              { label: "VAT Rate", value: "18%" },
-              { label: "Team Modules", value: "12+" },
-              { label: "Compliance", value: "TRA Ready" },
-            ].map(s => (
-              <div key={s.label} className="bg-sidebar-accent rounded-xl p-4">
-                <p className="text-sidebar-foreground text-2xl font-bold">{s.value}</p>
-                <p className="text-sidebar-foreground/50 text-sm">{s.label}</p>
-              </div>
-            ))}
-          </div>
         </div>
         <p className="text-sidebar-foreground/30 text-sm relative z-10">
           © 2026 Integrated Communication Limited. Dar es Salaam, Tanzania.

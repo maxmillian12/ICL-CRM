@@ -5,3 +5,23 @@ out/
 .env.production
 *.log
 .vercel
+
+# Local Netlify folder
+.netlify
+
+# Android release keystore (NEVER commit this)
+android/app/release.keystore
+
+# Android build outputs
+android/app/build/
+android/.gradle/
+
+# iOS build outputs
+ios/App/Pods/
+ios/App/build/
+
+# Capacitor generated
+out/
+
+# Netlify
+.netlify/

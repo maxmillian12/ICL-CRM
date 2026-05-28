@@ -27,22 +27,24 @@ export async function GET(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   if (!WRITE_ROLES.includes(auth.role)) return NextResponse.json({ error: "Access denied" }, { status: 403 });
   const { searchParams } = new URL(req.url);
-  const conditions: string[] = [];
-  const vals: unknown[] = [];
-  let i = 1;
-  if (searchParams.get("status")) { conditions.push(`inv.status=$${i++}`); vals.push(searchParams.get("status")); }
-  if (searchParams.get("type")) { conditions.push(`inv.type=$${i++}`); vals.push(searchParams.get("type")); }
-  if (searchParams.get("client_id")) { conditions.push(`inv.client_id=$${i++}`); vals.push(searchParams.get("client_id")); }
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const { neon } = await import("@neondatabase/serverless");
-  const db = neon(process.env.DATABASE_URL!);
-  const res = await db.query(`
-    SELECT inv.*, c.company AS client_name, c.tin AS client_tin, c.vrn AS client_vrn,
-           COALESCE((SELECT json_agg(ii) FROM invoice_items ii WHERE ii.invoice_id=inv.id),'[]') AS items
-    FROM invoices inv LEFT JOIN clients c ON c.id=inv.client_id
-    ${where} ORDER BY inv.issue_date DESC
-  `, vals);
-  return NextResponse.json({ data: (res as unknown as {rows: Record<string,unknown>[]}).rows, total: (res as unknown as {rows: Record<string,unknown>[]}).rows.length });
+  const statusF = searchParams.get("status");
+  const typeF = searchParams.get("type");
+  const clientF = searchParams.get("client_id");
+  try {
+    const rows = await sql`
+      SELECT inv.*, c.company AS client_name, c.tin AS client_tin, c.vrn AS client_vrn,
+             COALESCE((SELECT json_agg(ii) FROM invoice_items ii WHERE ii.invoice_id=inv.id),'[]') AS items
+      FROM invoices inv LEFT JOIN clients c ON c.id=inv.client_id
+      WHERE (${statusF}::text IS NULL OR inv.status::text = ${statusF})
+        AND (${typeF}::text IS NULL OR inv.type::text = ${typeF})
+        AND (${clientF}::uuid IS NULL OR inv.client_id = ${clientF}::uuid)
+      ORDER BY inv.issue_date DESC
+    `;
+    return NextResponse.json({ data: rows, total: rows.length });
+  } catch (err) {
+    console.error("Invoices GET error:", err);
+    return NextResponse.json({ error: "Failed to fetch invoices" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

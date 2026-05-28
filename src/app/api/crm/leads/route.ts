@@ -22,28 +22,28 @@ const schema = z.object({
 export async function GET(req: NextRequest) {
   const auth = requireAuth(req);
   if (auth instanceof NextResponse) return auth;
-
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
-  const search = searchParams.get("search");
+  const statusF = searchParams.get("status");
+  const searchF = searchParams.get("search");
   const assignedTo = auth.role === "sales_user" ? auth.id : searchParams.get("assigned_to");
 
-  const conditions: string[] = [];
-  const vals: unknown[] = [];
-  let i = 1;
-  if (status) { conditions.push(`l.status=$${i++}`); vals.push(status); }
-  if (assignedTo) { conditions.push(`l.assigned_to=$${i++}`); vals.push(assignedTo); }
-  if (search) { conditions.push(`(l.company ILIKE $${i} OR l.contact_name ILIKE $${i})`); vals.push(`%${search}%`); i++; }
-
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const { neon } = await import("@neondatabase/serverless");
-  const db = neon(process.env.DATABASE_URL!);
-  const res = await db.query(`
-    SELECT l.*, u.name AS assigned_to_name
-    FROM leads l LEFT JOIN users u ON u.id=l.assigned_to
-    ${where} ORDER BY l.created_at DESC
-  `, vals);
-  return NextResponse.json({ data: (res as unknown as {rows: Record<string,unknown>[]}).rows, total: (res as unknown as {rows: Record<string,unknown>[]}).rows.length });
+  try {
+    // Use COALESCE pattern so we can pass null to skip filter
+    const rows = await sql`
+      SELECT l.*, u.name AS assigned_to_name
+      FROM leads l LEFT JOIN users u ON u.id = l.assigned_to
+      WHERE (${statusF}::text IS NULL OR l.status::text = ${statusF})
+        AND (${assignedTo}::uuid IS NULL OR l.assigned_to = ${assignedTo}::uuid)
+        AND (${searchF}::text IS NULL
+             OR l.company ILIKE ${'%' + (searchF || '') + '%'}
+             OR l.contact_name ILIKE ${'%' + (searchF || '') + '%'})
+      ORDER BY l.created_at DESC
+    `;
+    return NextResponse.json({ data: rows, total: rows.length });
+  } catch (err) {
+    console.error("Leads error:", err);
+    return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(rows[0], { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: "Validation failed", details: err.issues.map(e=>`${e.path}: ${e.message}`) }, { status: 400 });
-    console.error(err);
+    console.error("Lead create error:", err);
     return NextResponse.json({ error: "Failed to create lead" }, { status: 500 });
   }
 }

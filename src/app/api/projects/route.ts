@@ -22,25 +22,23 @@ export async function GET(req: NextRequest) {
   const auth = requireAuth(req);
   if (auth instanceof NextResponse) return auth;
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
-  const clientId = searchParams.get("client_id");
-
-  const conditions: string[] = [];
-  const vals: unknown[] = [];
-  let i = 1;
-  if (status) { conditions.push(`p.status=$${i++}`); vals.push(status); }
-  if (clientId) { conditions.push(`p.client_id=$${i++}`); vals.push(clientId); }
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-
-  const { neon } = await import("@neondatabase/serverless");
-  const db = neon(process.env.DATABASE_URL!);
-  const res = await db.query(`
-    SELECT p.*, c.company AS client_name,
-           COALESCE((SELECT json_agg(u.name) FROM project_members pm JOIN users u ON u.id=pm.user_id WHERE pm.project_id=p.id),'[]') AS team_members
-    FROM projects p LEFT JOIN clients c ON c.id=p.client_id
-    ${where} ORDER BY p.created_at DESC
-  `, vals);
-  return NextResponse.json({ data: (res as unknown as {rows: Record<string,unknown>[]}).rows, total: (res as unknown as {rows: Record<string,unknown>[]}).rows.length });
+  const statusF = searchParams.get("status");
+  const clientF = searchParams.get("client_id");
+  try {
+    const rows = await sql`
+      SELECT p.*, c.company AS client_name,
+             COALESCE((SELECT json_agg(u.name) FROM project_members pm
+                       JOIN users u ON u.id=pm.user_id WHERE pm.project_id=p.id),'[]') AS team_members
+      FROM projects p LEFT JOIN clients c ON c.id=p.client_id
+      WHERE (${statusF}::text IS NULL OR p.status::text = ${statusF})
+        AND (${clientF}::uuid IS NULL OR p.client_id = ${clientF}::uuid)
+      ORDER BY p.created_at DESC
+    `;
+    return NextResponse.json({ data: rows, total: rows.length });
+  } catch (err) {
+    console.error("Projects error:", err);
+    return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -70,7 +68,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(rows[0], { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) return NextResponse.json({ error: "Validation failed", details: err.issues.map(e=>`${e.path}: ${e.message}`) }, { status: 400 });
-    console.error(err);
+    console.error("Project create error:", err);
     return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
   }
 }

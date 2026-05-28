@@ -19,26 +19,25 @@ export async function GET(req: NextRequest) {
   const auth = requireAuth(req);
   if (auth instanceof NextResponse) return auth;
   const { searchParams } = new URL(req.url);
-  const conditions: string[] = [];
-  const vals: unknown[] = [];
-  let i = 1;
-  const projectId = searchParams.get("project_id");
-  const assigneeId = searchParams.get("assignee_id");
-  const status = searchParams.get("status");
-  if (projectId) { conditions.push(`t.project_id=$${i++}`); vals.push(projectId); }
-  if (assigneeId) { conditions.push(`t.assignee_id=$${i++}`); vals.push(assigneeId); }
-  if (status) { conditions.push(`t.status=$${i++}`); vals.push(status); }
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const { neon } = await import("@neondatabase/serverless");
-  const db = neon(process.env.DATABASE_URL!);
-  const res = await db.query(`
-    SELECT t.*,u.name AS assignee_name,p.name AS project_name,
-           COALESCE((SELECT json_agg(c ORDER BY c.position) FROM task_checklist c WHERE c.task_id=t.id),'[]') AS checklist,
-           (SELECT COUNT(*)::int FROM task_comments tc WHERE tc.task_id=t.id) AS comments
-    FROM tasks t LEFT JOIN users u ON u.id=t.assignee_id LEFT JOIN projects p ON p.id=t.project_id
-    ${where} ORDER BY t.due_date ASC NULLS LAST
-  `, vals);
-  return NextResponse.json({ data: (res as unknown as {rows: Record<string,unknown>[]}).rows, total: (res as unknown as {rows: Record<string,unknown>[]}).rows.length });
+  const projectF = searchParams.get("project_id");
+  const assigneeF = searchParams.get("assignee_id");
+  const statusF = searchParams.get("status");
+  try {
+    const rows = await sql`
+      SELECT t.*, u.name AS assignee_name, p.name AS project_name,
+             COALESCE((SELECT json_agg(c ORDER BY c.position) FROM task_checklist c WHERE c.task_id=t.id),'[]') AS checklist,
+             (SELECT COUNT(*)::int FROM task_comments tc WHERE tc.task_id=t.id) AS comments
+      FROM tasks t LEFT JOIN users u ON u.id=t.assignee_id LEFT JOIN projects p ON p.id=t.project_id
+      WHERE (${projectF}::uuid IS NULL OR t.project_id = ${projectF}::uuid)
+        AND (${assigneeF}::uuid IS NULL OR t.assignee_id = ${assigneeF}::uuid)
+        AND (${statusF}::text IS NULL OR t.status::text = ${statusF})
+      ORDER BY t.due_date ASC NULLS LAST
+    `;
+    return NextResponse.json({ data: rows, total: rows.length });
+  } catch (err) {
+    console.error("Tasks error:", err);
+    return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
